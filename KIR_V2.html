@@ -18,6 +18,137 @@
         newLink.rel = 'shortcut icon';
         newLink.href = KIR_LOGO_BASE64;
         docHead.appendChild(newLink);
+
+        // =====================================================
+        // PWA - Progressive Web App Configuration
+        // =====================================================
+        
+        // Créer et injecter le Web App Manifest inline
+        const manifest = {
+            name: "K.I.R. - Kicad Ibom Reorder",
+            short_name: "K.I.R.",
+            description: "Outil de réordonnancement des composants IBOM pour KiCad",
+            start_url: "./",
+            display: "standalone",
+            background_color: "#182038",
+            theme_color: "#182038",
+            orientation: "any",
+            icons: [
+                {
+                    src: KIR_LOGO_BASE64,
+                    sizes: "512x512",
+                    type: "image/webp",
+                    purpose: "any maskable"
+                }
+            ]
+        };
+        
+        const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+        const manifestURL = URL.createObjectURL(manifestBlob);
+        const manifestLink = document.createElement('link');
+        manifestLink.rel = 'manifest';
+        manifestLink.href = manifestURL;
+        docHead.appendChild(manifestLink);
+
+        // Meta tags pour PWA
+        const metaThemeColor = document.createElement('meta');
+        metaThemeColor.name = 'theme-color';
+        metaThemeColor.content = '#182038';
+        docHead.appendChild(metaThemeColor);
+
+        const metaAppleMobileWebAppCapable = document.createElement('meta');
+        metaAppleMobileWebAppCapable.name = 'apple-mobile-web-app-capable';
+        metaAppleMobileWebAppCapable.content = 'yes';
+        docHead.appendChild(metaAppleMobileWebAppCapable);
+
+        const metaAppleMobileWebAppStatusBarStyle = document.createElement('meta');
+        metaAppleMobileWebAppStatusBarStyle.name = 'apple-mobile-web-app-status-bar-style';
+        metaAppleMobileWebAppStatusBarStyle.content = 'black-translucent';
+        docHead.appendChild(metaAppleMobileWebAppStatusBarStyle);
+
+        // Apple touch icon
+        const appleTouchIcon = document.createElement('link');
+        appleTouchIcon.rel = 'apple-touch-icon';
+        appleTouchIcon.href = KIR_LOGO_BASE64;
+        docHead.appendChild(appleTouchIcon);
+
+        // Service Worker inline pour le mode hors-ligne
+        const swCode = `
+            const CACHE_NAME = 'kir-cache-v1';
+            
+            self.addEventListener('install', (event) => {
+                self.skipWaiting();
+            });
+            
+            self.addEventListener('activate', (event) => {
+                event.waitUntil(clients.claim());
+            });
+            
+            self.addEventListener('fetch', (event) => {
+                event.respondWith(
+                    fetch(event.request).catch(() => {
+                        return caches.match(event.request);
+                    })
+                );
+            });
+        `;
+        
+        const swBlob = new Blob([swCode], { type: 'application/javascript' });
+        const swURL = URL.createObjectURL(swBlob);
+        
+        // Enregistrer le Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register(swURL, { scope: './' })
+                .then((registration) => {
+                    console.log('K.I.R. Service Worker enregistré avec succès');
+                })
+                .catch((error) => {
+                    console.log('Service Worker non disponible (fichier local ou HTTP):', error.message);
+                });
+        }
+
+        // =====================================================
+        // PWA Installation Logic
+        // =====================================================
+        let deferredPrompt = null;
+        
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Empêcher l'affichage automatique du prompt
+            e.preventDefault();
+            // Sauvegarder l'événement pour l'utiliser plus tard
+            deferredPrompt = e;
+            // Afficher le bouton d'installation
+            const installBtn = document.getElementById('installBtn');
+            if (installBtn) {
+                installBtn.style.display = 'flex';
+            }
+            console.log('K.I.R. peut être installé comme application');
+        });
+
+        window.addEventListener('appinstalled', () => {
+            // Masquer le bouton après installation
+            const installBtn = document.getElementById('installBtn');
+            if (installBtn) {
+                installBtn.style.display = 'none';
+            }
+            deferredPrompt = null;
+            console.log('K.I.R. a été installé avec succès!');
+        });
+
+        // Fonction pour déclencher l'installation
+        function installPWA() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('Installation acceptée');
+                    } else {
+                        console.log('Installation refusée');
+                    }
+                    deferredPrompt = null;
+                });
+            }
+        }
     </script>
     <style>
         :root {
@@ -150,6 +281,40 @@
 
         .lang-btn:hover {
             border-color: var(--primary-color);
+        }
+
+        /* PWA Install Button */
+        .install-btn {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+            margin-right: 10px;
+        }
+
+        .install-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+            background: linear-gradient(135deg, #218838 0%, #1aa179 100%);
+        }
+
+        .install-btn:active {
+            transform: translateY(0);
+        }
+
+        .install-btn svg {
+            width: 14px;
+            height: 14px;
+            fill: currentColor;
         }
 
         .upload-section {
@@ -958,6 +1123,10 @@
     <div class="container">
         <div class="header">
             <div class="language-selector">
+                <button id="installBtn" class="install-btn" onclick="installPWA()" title="Installer K.I.R. comme application">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                    <span data-i18n="install">Installer</span>
+                </button>
                 <button class="lang-btn active" data-lang="fr">FR</button>
                 <button class="lang-btn" data-lang="en">EN</button>
             </div>
@@ -1201,7 +1370,8 @@
                         'preview-title': "K.I.R. - Aperçu graphique du BOM",
                         'refresh': "Actualiser",
                         'fullscreen': "Plein écran",
-                        'generating-preview': "Génération de l'aperçu..."
+                        'generating-preview': "Génération de l'aperçu...",
+                        'install': "Installer"
                     },
                     en: {
                         title: "K.I.R. - Kicad Ibom Reorder",
@@ -1245,7 +1415,8 @@
                         'preview-title': "K.I.R. - BOM Graphical Preview",
                         'refresh': "Refresh",
                         'fullscreen': "Fullscreen",
-                        'generating-preview': "Generating preview..."
+                        'generating-preview': "Generating preview...",
+                        'install': "Install"
                     }
                 };
 
