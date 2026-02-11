@@ -1,6 +1,0 @@
-(sym_lib_table
-  (version 7)
-  (lib (name "WE-PD_7345P")(type "KiCad")(uri "${KICAD_USER_TEMPLATE_DIR2}/WE-PD_7345P/WE-PD_7345P.kicad_sym")(options "")(descr ""))
-  (lib (name "WCAP-ATG8_8X11.5")(type "KiCad")(uri "${KICAD_USER_TEMPLATE_DIR2}/WCAP-ATG8_8X11.5/WCAP-ATG8_8X11.5.kicad_sym")(options "")(descr ""))
-  (lib (name "LNK302DN-TL")(type "KiCad")(uri "${KICAD_USER_TEMPLATE_DIR2}/ul_LNK302DN-TL/lnk302DN-TL/LNK302DN-TL.kicad_sym")(options "")(descr ""))
-)
