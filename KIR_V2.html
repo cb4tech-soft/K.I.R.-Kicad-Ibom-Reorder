@@ -2596,7 +2596,29 @@
 
         // Initialize the application
         document.addEventListener('DOMContentLoaded', () => {
-            new BOMReorder();
+            window.kirApp = new BOMReorder();
+
+            // Charger ibom depuis le paramètre d'URL dataUrl
+            const urlParams = new URLSearchParams(window.location.search);
+            const dataUrl = urlParams.get('dataUrl');
+            if (dataUrl) {
+                fetch(dataUrl)
+                    .then(r => r.text())
+                    .then(content => window.kirApp.parseBOMFile(content))
+                    .catch(e => console.error('Erreur chargement dataUrl:', e));
+                return;
+            }
+
+            // Fallback: données base64 injectées (ancienne méthode)
+            if (window.KIR_INITIAL_BOM_BASE64) {
+                try {
+                    const content = atob(window.KIR_INITIAL_BOM_BASE64);
+                    window.kirApp.parseBOMFile(content);
+                } catch (e) {
+                    console.error('Erreur décodage base64:', e);
+                }
+                delete window.KIR_INITIAL_BOM_BASE64;
+            }
         });
     </script>
 </body>
